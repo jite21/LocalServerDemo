@@ -2,7 +2,7 @@
 To make localserver accessible to internet
  
 # How to Run ?
-## Install python 3
+**Install python 3**
 
 1. Create python virtual environment : **python -m venv <project_name>**
 2. Activate the Project : **.\<project_name>\Scripts\activate.bat**
