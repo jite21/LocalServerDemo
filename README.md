@@ -12,6 +12,9 @@ To make localserver accessible to internet
 
 # Description
 Protocol used is SocketIO.
+
 ngrok-server-socketio.py - SocketIO server which will take request from User from Internet and redirect it to local server.
+
 ngrok-client-socketio.py - SocketIO Client will run on localserver. It will get request from SocketIO server and pass it to localhost.
+
 localapp.py - Local server app running in localhost.
