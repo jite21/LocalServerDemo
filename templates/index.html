@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <title>SocketIO example</title>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+      <script type="text/javascript">
+         var socket;
+         function checkSocket(){
+         
+           // sending a connect request to the server.
+           socket = io.connect('http://localhost:5000');
+         
+           socket.on('success', function(msg) {
+               console.log('Success', msg);
+               document.getElementById('recieve').innerHTML = 'Recieved : ' + msg;
+               document.getElementById('sendmessage').style.display = 'block';
+          });
+         }
+
+         function sendmessage(){
+            socket.emit('message','hello')
+            socket.on('reply', function(msg){
+                console.log('Reply : ', msg);
+                document.getElementById('reply').innerHTML = 'reply : ' + msg;
+          });
+         }
+
+      </script>
+   </head>
+   <body>
+    <h1>SocketIO Example</h1>
+    <button onclick="checkSocket()">Test Socket</button>
+    <button id="sendmessage" style="display:none;" onclick="sendmessage()">Send message</button>
+    <p id="recieve"></p>
+    <p id="reply"></p>
+   </body>
+</html>
