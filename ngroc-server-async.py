@@ -1,45 +1,44 @@
+from aiohttp import web
+import socketio
+
 import asyncio
-import os
 
-import aiohttp.web
+sio = socketio.AsyncServer()
+app = web.Application()
+sio.attach(app)
 
-HOST = '0.0.0.0'
-PORT = 8080
+class Proxy():
+    def __init__(self):
+        pass
+    
+    async def index(self, request):
+        """Serve the client-side application."""
+        req_url = 'http://localhost:5001'
+        self.resp = 'Not Able to Connect'
+        def get_response(*args):
+            self.resp = args[0]
+            print(self.resp)
+            
+        await sio.emit('request', str(req_url), callback=get_response)
+        print('before sleep')
+        await asyncio.sleep(5)
+        print('after sleep')
+        return web.Response(text=self.resp)
+
+@sio.event
+def connect(sid, environ):
+    print("connect ", sid)
+
+@sio.event
+def disconnect(sid):
+    print('disconnect ', sid)
+
+@sio.on('response')
+def get_response(data):
+    print(data)
 
 
-async def get_user_request(request):
-    '''
-    To get user's Request
-    '''
-    return aiohttp.web.Response(text='User Request')
-
-
-async def websocket_handler(request):
-    print('Websocket connection starting')
-    ws = aiohttp.web.WebSocketResponse()
-    await ws.prepare(request)
-    print('Websocket connection ready')
-
-    async for msg in ws:
-        print(msg)
-        if msg.type == aiohttp.WSMsgType.TEXT:
-            print(msg.data)
-            if msg.data == 'close':
-                await ws.close()
-            else:
-                await ws.send_str(msg.data + '/answer')
-
-    print('Websocket connection closed')
-    return ws
-
-
-def main():
-    loop = asyncio.get_event_loop()
-    app = aiohttp.web.Application(loop=loop)
-    app.router.add_route('GET', '/', get_user_request)
-    app.router.add_route('GET', '/ws', websocket_handler)
-    aiohttp.web.run_app(app, host=HOST, port=PORT)
-
+app.router.add_get('/', Proxy().index)
 
 if __name__ == '__main__':
-    main()
+    web.run_app(app)
