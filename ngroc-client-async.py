@@ -1,37 +1,27 @@
-import asyncio
-import os
+import socketio
+import requests
 
-import aiohttp
+sio = socketio.Client()
 
-HOST = 'localhost'
-PORT = 8080
+@sio.event
+def connect():
+    print('connection established')
 
-URL = f'http://{HOST}:{PORT}/ws'
+@sio.event
+def my_message(data):
+    print('message received with ', data)
+    sio.emit('my response', {'response': 'my response'})
 
+@sio.event
+def disconnect():
+    print('disconnected from server')
 
-async def main():
-    session = aiohttp.ClientSession()
-    async with session.ws_connect(URL) as ws:
+@sio.on('request')
+def user_req(url):
+    print(url)
+    resp = requests.get(url)
+    return resp.text
 
-        await prompt_and_send(ws)
-        async for msg in ws:
-            print('Message received from server:', msg)
-            await prompt_and_send(ws)
-
-            if msg.type in (aiohttp.WSMsgType.CLOSED,
-                            aiohttp.WSMsgType.ERROR):
-                break
-
-
-async def prompt_and_send(ws):
-    new_msg_to_send = input('Type a message to send to the server: ')
-    if new_msg_to_send == 'exit':
-        print('Exiting!')
-        raise SystemExit(0)
-    await ws.send_str(new_msg_to_send)
-
-
-if __name__ == '__main__':
-    print('Type "exit" to quit')
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+sio.connect('http://localhost:8080')
+sio.emit('message','test')
+sio.wait()
