@@ -9,7 +9,7 @@ def onconnect():
 def onrequest(*req):
     print(*req)
 
-with SocketIO('127.0.0.1', 5000, LoggingNamespace) as socketIO:
+with SocketIO('127.0.0.1', 8080, LoggingNamespace) as socketIO:
     socketIO.emit('message','hello')
     socketIO.on('reply', show_reply)
     socketIO.on('connect', onconnect)
