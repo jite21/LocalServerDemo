@@ -1,10 +1,12 @@
 from flask import Flask
+import time
 #testing fork, cmd commit, pull request
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
+    time.sleep(5)
     return 'This is response from Localserver'
 
 if __name__ == '__main__':

@@ -2,43 +2,59 @@ from aiohttp import web
 import socketio
 
 import asyncio
+from traceback import print_exc
 
 sio = socketio.AsyncServer()
-app = web.Application()
-sio.attach(app)
 
-class Proxy():
-    def __init__(self):
-        pass
-    
+class Proxy(socketio.AsyncNamespace):
+    resp = 'Not Able to Connect'
+    config = {}
+
     async def index(self, request):
         """Serve the client-side application."""
-        req_url = 'http://localhost:5001'
-        self.resp = 'Not Able to Connect'
-        def get_response(*args):
-            self.resp = args[0]
-            print(self.resp)
+
+        try:
+            self.state = 0
+            localsiteid = request.match_info['localsiteid']
+            username = request.match_info['username']
+            localurl = Proxy.config[username][localsiteid]
+
+            def get_response(*args):
+                Proxy.resp = args[0]
+                self.state = 1
+
+            await sio.emit('request', localurl, callback=get_response)
+            for i in range(20):
+                if not self.state:
+                    await asyncio.sleep(1)
             
-        await sio.emit('request', str(req_url), callback=get_response)
-        print('before sleep')
-        await asyncio.sleep(5)
-        print('after sleep')
-        return web.Response(text=self.resp)
+            return web.Response(text=Proxy.resp)
 
-@sio.event
-def connect(sid, environ):
-    print("connect ", sid)
+        except KeyError:
+            print_exc()
+            return web.Response(text='I am sorry I was not able to find the user. Please check the username')
 
-@sio.event
-def disconnect(sid):
-    print('disconnect ', sid)
+        except Exception as e:
+            print_exc()
+            return web.Response(text='Looks Like I am unable to contact the website. Please check the url.')
 
-@sio.on('response')
-def get_response(data):
-    print(data)
+    def on_connect(self, sid, environ):
+        print("connect ", sid)
 
+    def on_disconnect(self, sid):
+        print('disconnect ', sid)
 
-app.router.add_get('/', Proxy().index)
+    async def on_set_env(self, sid, data):
+        import json
+        config = json.loads(data)
+        Proxy.config[config['username']] = config['urlmap']
 
-if __name__ == '__main__':
+def main():
+    app = web.Application()
+    sio.attach(app)
+    sio.register_namespace(Proxy('/'))
+    app.router.add_get(r'/{username}/{localsiteid:\d+}', Proxy().index)
     web.run_app(app)
+    
+if __name__ == '__main__':
+    main()
