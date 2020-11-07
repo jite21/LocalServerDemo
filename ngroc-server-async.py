@@ -20,7 +20,6 @@ class UserSession(object):
         '''
         To store user session in dictionary.
         '''
-
         UserSession.Sessions[username] = sid
 
     @staticmethod
@@ -28,7 +27,6 @@ class UserSession(object):
         '''
         To get session of a user
         '''
-
         return UserSession.Sessions[username]
 
     @staticmethod
@@ -36,15 +34,17 @@ class UserSession(object):
         '''
         To set User connection details
         '''
-
         UserSession.Transactions[sid] = {}
         UserSession.Transactions[sid]['username'] = username
         UserSession.Transactions[sid]['localurls'] = localurls
 
     @staticmethod
     def set_response(response):
-        sid = response['sid']
-        UserSession.Transactions[sid]['response'] = response['Response']
+        try:
+            sid = response['sid']
+            UserSession.Transactions[sid]['response'] = response['Response']
+        except:
+            raise Exception('Session Not Found')
     
     @staticmethod
     def get_response(sid):
@@ -60,7 +60,10 @@ class UserSession(object):
 
     @staticmethod
     def get_user_localurl(sid, localurlid):
-        return UserSession.Transactions[sid]['localurls'][localurlid]
+        try:
+            return UserSession.Transactions[sid]['localurls'][localurlid]
+        except:
+            raise Exception('URL not found')
     
     @staticmethod
     def delete_all(sid):
@@ -75,6 +78,9 @@ class UserSession(object):
 
     @staticmethod
     def print_all(msg = ""):
+        '''
+        Prints all Session, Transaction details
+        '''
         print('{0}\nUser Sessions : {1}\nTransactions : {2}'.format(
                                                             msg,
                                                             json.dumps(UserSession.Sessions),
@@ -82,12 +88,12 @@ class UserSession(object):
                                                             ))
 
 
-
 class Proxy(socketio.AsyncNamespace):
 
     async def index(self, request):
-        """Serve the client-side application."""
-
+        '''
+        Serve the client-side application.
+        '''
         try:
             self.state = 0
             localurlid = request.match_info['localurlid']
@@ -119,6 +125,9 @@ class Proxy(socketio.AsyncNamespace):
             return web.Response(text='Looks Like I am unable to contact the website. Please check the url.')
 
     async def on_set_env(self, sid, data):
+        '''
+        initialize variables (sessions and transaction) when user first connects
+        '''
         config = json.loads(data)
         UserSession.set_user_session(username = config['username'],
                                      sid = config['sid'],
