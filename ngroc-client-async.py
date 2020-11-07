@@ -6,38 +6,43 @@ from traceback import print_exc
 import sys
 
 sio = socketio.Client()
-server_url = 'http://34.72.78.16:80/'
-local_urls = ['http://localhost:5001/', 'http://localhost:5002/']
+serverurl = 'http://localhost:8080/'
+localurls = ['http://localhost:5001/', 'http://localhost:5002/']
 username = 'jitendra'
 
 def set_config():
-    return dict(enumerate(local_urls))
+    return dict(enumerate(localurls))
 
 @sio.event
 def connect():
     print('connection established')
     config = {}
-    config['urlmap'] = set_config()
+    config['localurls'] = set_config()
+    config['sid'] = sio.sid
     config['username'] = username
-    sio.emit('set_env',json.dumps(config))
-
-@sio.event
-def my_message(data):
-    print('message received with ', data)
-    sio.emit('my response', {'response': 'my response'})
+    print(config)
+    sio.emit('set_env', json.dumps(config))
 
 @sio.event
 def disconnect():
     print('disconnected from server')
 
 @sio.on('request')
-def user_req(url):
-    print(url)
+def user_req(data):
+    request = json.loads(data)
     try:
-        resp = requests.get(url)
-        return resp.text
+        resp = requests.get(request['localurl'], headers = request['headers'])
+        resp_dict = {'Response':{}}
+        resp_dict['Response']['headers'] = dict(resp.headers)
+        resp_dict['Response']['body'] = resp.text
+        resp_dict['sid'] = sio.sid
+        return json.dumps(resp_dict)
     except Exception as e:
         return str(print_exc())
 
-sio.connect(server_url)
-sio.wait()
+def start_server():
+    sio.connect(serverurl)
+    sio.wait()
+
+if __name__ == '__main__':
+    start_server()
